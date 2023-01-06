@@ -17,10 +17,10 @@ import {
 } from 'rxjs/operators';
 
 import { createCanvasElement, render } from './canvas';
-import { generateApples, generateSnake, move, nextDirection,
+import { generateApples, initialSnake, move, nextDirection,
          eat, checkSnakeCollision, compareObjects } from './functions';
 import { SNAKE_LENGTH, APPLE_COUNT, POINTS_PER_APPLE, GROW_PER_APPLE,
-         SPEED, DIRECTIONS, INITIAL_DIRECTION } from './constants';
+         SPEED, DIRECTIONS, INITIAL_DIRECTION, DirectionDown } from './constants';
 
 const canvas = createCanvasElement();
 const ctx = canvas.getContext('2d');
@@ -32,7 +32,7 @@ const direction$ = keyDown$
   .pipe(
     map((e: any) => DIRECTIONS[e.keyCode]),
     filter(Boolean),
-    startWith(INITIAL_DIRECTION),
+    startWith(DirectionDown),
     scan(nextDirection),
     distinctUntilChanged()
   );
@@ -48,9 +48,9 @@ const snake$ = tick$
     withLatestFrom(
       direction$,
       snakeLength$,
-      (_, direction, snakeLength) => ({ direction, snakeLength })
+      (_, direction, snakeLength) => ({direction, snakeLength} )
     ),
-    scan(move, generateSnake(SNAKE_LENGTH))
+    scan(move, initialSnake(SNAKE_LENGTH))
   );
 
 const apples$ = snake$
