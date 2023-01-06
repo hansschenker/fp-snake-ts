@@ -1,20 +1,26 @@
+import { POINTS_PER_APPLE } from './../evolution/snake-3/src/constants';
 import { COLS, ROWS, Direction, createPoint, Point } from "./constants";
 
+export const nextScore = (score: number) => score + POINTS_PER_APPLE
+
+export const nextLength = (snakeLength:number, grow:number) => snakeLength + grow
+
 const range = (l: number) => [...Array(l).keys()];
-function checkCollision(a, b) {
+
+function checkPointCollision(a:Point, b:Point):boolean {
   return a.x === b.x && a.y === b.y;
 }
 export function checkSnakeCollision(snake = []) {
   const [head, ...tail] = snake;
-  return !tail.some((part) => checkCollision(part, head));
+  return !tail.some((part) => checkPointCollision(part, head));
 }
 
-export function eat(apples: Point[], snake: Point[]) {
+export function nextApples(apples: Point[], snake: Point[]):Point[] {
   const head = snake[0];
-  const withoutEaten = apples.filter((apple) => !checkCollision(head, apple));
-  const wasEaten = withoutEaten.length < apples.length;
+  const notEaten = apples.filter((apple) => !checkPointCollision(head, apple));
+  const wasEaten = notEaten.length < apples.length;
   const added = wasEaten ? [getRandomPosition(snake)] : [];
-  return [...withoutEaten, ...added];
+  return [...notEaten, ...added];
 }
 
 function getRandomNumber(min, max) {
@@ -27,8 +33,8 @@ function getRandomPosition(snake = []) {
     y: getRandomNumber(0, ROWS - 1),
   };
 
-  function isEmptyCell(position, snake) {
-    return !snake.some((segment) => checkCollision(segment, position));
+  function isEmptyCell(position:Point, snake:Point[]) {
+    return !snake.some((segment) => checkPointCollision(segment, position));
   }
 
   return isEmptyCell(position, snake) ? position : getRandomPosition(snake);
@@ -48,7 +54,7 @@ export function wrapBounds(point) {
   return { x, y };
 }
 
-export function move(
+export function nextMove(
   snake: Point[],
   to: { direction: Direction; snakeLength: number }
 ): Point[] {
@@ -67,9 +73,20 @@ export function move(
 }
 
 export function nextDirection(previous: Direction, next: Direction): Direction {
-  return previous.x === next.x || previous.y === next.y ? next : previous;
+  // opposite direction is not allowed
+  return previous.x === next.x || previous.y === next.y ? previous : next;
 }
 
+export function compareApples(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 export function compareObjects(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
+export function compareXposition(x1:Point, x2:Point) {
+  return x1.x < x2.x
+}
+export function compareYposition(y1:Point, y2:Point) {
+  return y1.y > y2.y
+}
+

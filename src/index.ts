@@ -2,7 +2,8 @@ import {
   BehaviorSubject,
   combineLatest,
   fromEvent,
-  interval
+  interval,
+  Observable
 } from 'rxjs';
 import {
   distinctUntilChanged,
@@ -13,24 +14,25 @@ import {
   skip,
   startWith,
   takeWhile,
+  tap,
   withLatestFrom
 } from 'rxjs/operators';
 
 import { createCanvasElement, render } from './canvas';
-import { generateApples, initialSnake, move, nextDirection,
-         eat, checkSnakeCollision, compareObjects } from './functions';
+import { generateApples, initialSnake, nextMove, nextDirection,
+         nextApples, checkSnakeCollision, compareObjects, nextLength, nextScore, compareApples } from './functions';
 import { SNAKE_LENGTH, APPLE_COUNT, POINTS_PER_APPLE, GROW_PER_APPLE,
-         SPEED, DIRECTIONS, INITIAL_DIRECTION, DirectionDown } from './constants';
+         SPEED, DIRECTIONS, INITIAL_DIRECTION, DirectionDown, Point } from './constants';
 
 const canvas = createCanvasElement();
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
 
 const tick$ = interval(SPEED);
-const keyDown$ = fromEvent(document.body, 'keydown');
+const keyDown$ = fromEvent<KeyboardEvent>(document.body, 'keydown');
 const direction$ = keyDown$
   .pipe(
-    map((e: any) => DIRECTIONS[e.keyCode]),
+    map((e: KeyboardEvent) => DIRECTIONS[e.keyCode]),
     filter(Boolean),
     startWith(DirectionDown),
     scan(nextDirection),
@@ -40,7 +42,7 @@ const direction$ = keyDown$
 const increaseLength$ = new BehaviorSubject(0);
 const snakeLength$ = increaseLength$
   .pipe(
-    scan((snakeLength, grow) => snakeLength + grow, SNAKE_LENGTH)
+    scan(nextLength, SNAKE_LENGTH)
   );
 
 const snake$ = tick$
@@ -50,19 +52,19 @@ const snake$ = tick$
       snakeLength$,
       (_, direction, snakeLength) => ({direction, snakeLength} )
     ),
-    scan(move, initialSnake(SNAKE_LENGTH))
+    scan(nextMove, initialSnake(SNAKE_LENGTH))
   );
 
-const apples$ = snake$
+const apples$:Observable<Point[]> = snake$
   .pipe(
-    scan(eat, generateApples(APPLE_COUNT)),
-    distinctUntilChanged(compareObjects),
+    scan(nextApples, generateApples(APPLE_COUNT)),
+    distinctUntilChanged(compareApples),
     share()
   );
 
-const applesEaten$ = apples$
+const eatenToLength$ = apples$
   .pipe(
-    skip(1),
+    skip(1), // initial apple creation
     map(_ => GROW_PER_APPLE)
   )
   .subscribe(v => increaseLength$.next(v));
@@ -71,7 +73,7 @@ const score$ = increaseLength$
   .pipe(
     skip(1),
     startWith(0),
-    scan((score, _) => score + POINTS_PER_APPLE)
+    scan(nextScore)
   );
 
 const scene$ = combineLatest(
