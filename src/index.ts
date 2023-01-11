@@ -20,36 +20,56 @@ import {
 
 import { createCanvasElement, render } from './canvas';
 import { generateApples, initialSnake, nextMove, nextDirection,
-         nextApples, checkSnakeCollision, compareObjects, nextLength, nextScore, compareApples } from './functions';
+         nextApples, checkSnakeCollision, compareObjects, nextGrow, nextScore, compareApples } from './functions';
+
 import { SNAKE_LENGTH, APPLE_COUNT, POINTS_PER_APPLE, GROW_PER_APPLE,
-         SPEED, DIRECTIONS, INITIAL_DIRECTION, DirectionDown, Point } from './constants';
+         SPEED, DIRECTIONS, INITIAL_DIRECTION,  } from './constants';
+import { DirectionDown, Point } from './types';
 
 const canvas = createCanvasElement();
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
 
 const tick$ = interval(SPEED);
-const keyDown$ = fromEvent<KeyboardEvent>(document.body, 'keydown');
-const direction$ = keyDown$
-  .pipe(
+export type Direction = {x: number; y: number}
+
+const keyboardToDirections$  = (src: Observable<KeyboardEvent>):Observable<Direction> => {
+  return src.pipe(
     map((e: KeyboardEvent) => DIRECTIONS[e.keyCode]),
     filter(Boolean),
     startWith(DirectionDown),
-    scan(nextDirection),
-    distinctUntilChanged()
+  )
+}
+const directionToNextDirection$ = (src:Observable<Direction> ) => {
+
+    return src.pipe(
+      scan(nextDirection),
+      distinctUntilChanged()
+    )
+}
+const keyDown$ = fromEvent<KeyboardEvent>(document.body, 'keydown');
+const direction$ = keyDown$
+  .pipe(
+    keyboardToDirections$,
+    // map((e: KeyboardEvent) => DIRECTIONS[e.keyCode]),
+    // filter(Boolean),
+    // startWith(DirectionDown),
+    directionToNextDirection$
+    // scan(nextDirection),
+    // distinctUntilChanged()
   );
 
-const increaseLength$ = new BehaviorSubject(0);
-const snakeLength$ = increaseLength$
+const growState$ = new BehaviorSubject(0);
+const growStateChange$ = growState$
   .pipe(
-    scan(nextLength, SNAKE_LENGTH)
+    scan(nextGrow, SNAKE_LENGTH)
   );
 
 const snake$ = tick$
   .pipe(
     withLatestFrom(
       direction$,
-      snakeLength$,
+      growStateChange$,
       (_, direction, snakeLength) => ({direction, snakeLength} )
     ),
     scan(nextMove, initialSnake(SNAKE_LENGTH))
@@ -67,9 +87,9 @@ const eatenToLength$ = apples$
     skip(1), // initial apple creation
     map(_ => GROW_PER_APPLE)
   )
-  .subscribe(v => increaseLength$.next(v));
+  .subscribe(v => growState$.next(v));
 
-const score$ = increaseLength$
+const score$ = growState$
   .pipe(
     skip(1),
     startWith(0),

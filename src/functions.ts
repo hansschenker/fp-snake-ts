@@ -1,9 +1,10 @@
 import { POINTS_PER_APPLE } from './../evolution/snake-3/src/constants';
-import { COLS, ROWS, Direction, createPoint, Point } from "./constants";
+import { COLS, ROWS,  } from "./constants";
+import { createPoint, Direction, Point } from './types';
 
 export const nextScore = (score: number) => score + POINTS_PER_APPLE
 
-export const nextLength = (snakeLength:number, grow:number) => snakeLength + grow
+export const nextGrow = (length:number, grow:number) => length + grow
 
 const range = (l: number) => [...Array(l).keys()];
 
@@ -14,34 +15,36 @@ export function checkSnakeCollision(snake = []) {
   const [head, ...tail] = snake;
   return !tail.some((part) => checkPointCollision(part, head));
 }
+function getRandomPoint(snake = []):Point {
+  return  {
+    x: getRandomNumber(0, COLS - 1),
+    y: getRandomNumber(0, ROWS - 1),
+  };
+}
 
 export function nextApples(apples: Point[], snake: Point[]):Point[] {
   const head = snake[0];
   const notEaten = apples.filter((apple) => !checkPointCollision(head, apple));
   const wasEaten = notEaten.length < apples.length;
-  const added = wasEaten ? [getRandomPosition(snake)] : [];
+  const added = wasEaten ? [getRandomPoint(snake)] : [];
   return [...notEaten, ...added];
 }
 
-function getRandomNumber(min, max) {
+function getRandomNumber(min:number, max:number):number  {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-function getRandomPosition(snake = []) {
-  const position = {
-    x: getRandomNumber(0, COLS - 1),
-    y: getRandomNumber(0, ROWS - 1),
-  };
+
 
   function isEmptyCell(position:Point, snake:Point[]) {
     return !snake.some((segment) => checkPointCollision(segment, position));
   }
 
-  return isEmptyCell(position, snake) ? position : getRandomPosition(snake);
-}
+ // return isEmptyCell(position, snake) ? position : getRandomPosition(snake);
+
 
 export function generateApples(count: number) {
-  return range(count).map(() => getRandomPosition());
+  return range(count).map(() => getRandomPoint());
 }
 export function initialSnake(length: number) {
   return range(length).map((i) => createPoint(i, 0));
