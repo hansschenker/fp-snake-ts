@@ -1,3 +1,4 @@
+import { Direction, DirectionDown } from "./types";
 
 // board
 export const COLS = 30;
@@ -20,4 +21,4 @@ export const DIRECTIONS: {[key:number]:Direction} = {
   39: { x:  1, y:  0 },
   40: { x:  0, y:  1 },
 };
-export const INITIAL_DIRECTION = DirectionDown;
+export const INITIAL_DIRECTION:Direction = DirectionDown;
