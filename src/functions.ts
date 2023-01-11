@@ -21,7 +21,7 @@ function getRandomPoint(snake = []):Point {
   };
 }
 
-export function nextApples(apples: Point[], snake: Point[]):Point[] {
+export function nextApplePositions(apples: Point[], snake: Point[]):Point[] {
   const head = snake[0];
   const notEaten = apples.filter((apple) => !checkPoints(head, apple));
   const wasEaten = notEaten.length < apples.length;
