@@ -44,7 +44,7 @@ import {
 } from "./constants";
 
 // types
-import { Direction, DirectionDown, Point } from "./types";
+import { Direction, DirectionDown, Game, Point } from "./types";
 
 const canvas = createCanvasElement();
 const ctx = canvas.getContext("2d");
@@ -65,18 +65,19 @@ const keyboardToDirections$ = (
 const directionToNextDirection$ = (src: Observable<Direction>) => {
   return src.pipe(scan(nextDirection), distinctUntilChanged());
 };
-const keyDownChange$ = fromEvent<KeyboardEvent>(document.body, "keydown");
+const keyDownChange$: Observable<KeyboardEvent> = fromEvent<KeyboardEvent>(document.body, "keydown");
 const directionChange$ = keyDownChange$.pipe(
   keyboardToDirections$,
   directionToNextDirection$
 );
 // track apples eaten to calculate score
 const growLengthState$ = new BehaviorSubject(0);
-const growLengthChange$ = growLengthState$.pipe(scan(nextGrow, SNAKE_LENGTH));
+const growLengthChange$ : Observable<number> = growLengthState$.pipe(scan(nextGrow, SNAKE_LENGTH));
 
-const tick$ = interval(SPEED);
+const tickChange$: Observable<number> = interval(SPEED);
+
 // sanke position for scene
-const snakePositionChange$ = tick$.pipe(
+const snakePositionChange$:Observable<Point[]> = tickChange$.pipe(
   withLatestFrom(
     directionChange$,
     growLengthChange$,
@@ -100,22 +101,24 @@ const appleEatenGrowLengthState$ = applesPositionChange$
   .subscribe((grow: number) => growLengthState$.next(grow));
 
 // score for scene
-const scoreChange$ = growLengthState$.pipe(
+const scoreChange$:Observable<number> = growLengthState$.pipe(
   skip(1),
   startWith(0),
   scan(nextScore)
 );
 
-const sceneChange$ = combineLatest(
+
+
+const gameChange$: Observable<Game> = combineLatest(
   snakePositionChange$,
   applesPositionChange$,
   scoreChange$,
   (snake, apples, score) => ({ snake, apples, score })
 );
 
-const gameChange$ = tick$.pipe(
-  withLatestFrom(sceneChange$, (_, scene) => scene),
-  takeWhile((scene) => checkSnakeHasNotCollided(scene.snake))
+const gameLoopChange$: Observable<Game> = tickChange$.pipe(
+  withLatestFrom(gameChange$, (_, game) => game),
+  takeWhile((game) => checkSnakeHasNotCollided(game.snake))
 );
 
-gameChange$.subscribe((scene) => render(ctx, scene));
+gameLoopChange$.subscribe((game) => render(ctx, game));

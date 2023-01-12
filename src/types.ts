@@ -10,3 +10,5 @@ export type Point ={
   export const DirectionRight: Direction = { x: 1, y: 0 };
   export const DirectionUp: Direction = { x: 0, y: -1 };
   export const DirectionDown: Direction = { x: 0, y: 1 };
+
+  export type Game = {snake: Point[], apples: Point[], score: number}
